@@ -134,6 +134,7 @@ int idle_mode = LEDMODE_WHITE;
 int button_mode = LEDMODE_OFF;
 int special_mode = LEDMODE_AMBER;
 int hold_mode = LEDMODE_AMBER;
+int hold_timeout=HOLD_TIMEOUT;
 
 /* from libusb usbi.h */
 struct usb_dev_handle {
@@ -582,11 +583,12 @@ void handle_button(struct ir_command command) {
       if(previousButton != eventId) {
         holdButtonSent = 0;
       } else {
-        if(millis() - buttonStart > HOLD_TIMEOUT && !holdButtonSent) {
+        if(millis() - buttonStart > hold_timeout && !holdButtonSent) {
           set_led(hold_mode);
           switch(eventId) {
             case 0x03: case 0x02: send_button(EVENT_HOLD_MENU); break;
             case 0x05: case 0x04: send_button(EVENT_HOLD_PLAY); break;
+            case 0x0b: case 0x0a: send_multi(EVENT_HARMONY_INFO); break;
             case 0x9602: send_multi(EVENT_HARMONY_HOLD_MENU); break;
             case 0x9604: send_multi(EVENT_HARMONY_HOLD_OK); break;
           }
@@ -707,8 +709,11 @@ int main(int argc, char **argv) {
   
   int led_brightness = 1;
  
-  while ((c = getopt (argc, argv, "mBi:b:s:H:hd")) != -1)
+  while ((c = getopt (argc, argv, "mBit:b:s:H:hd")) != -1)
   switch (c) {
+  	//HOLD_TIMEOUT
+  	case 't':
+  		hold_timeout = atol(optarg); /*printf("worked %d", hold_timeout)*/;break;
     case 'm':
       multi_mode = 1; break;
     case 'i':
@@ -727,7 +732,7 @@ int main(int argc, char **argv) {
       led_brightness = 0; break;
     case '?':
       switch(optopt) {
-        case 'i': case 'b': case 's': case 'H':
+        case 'i': case 'b': case 's': case 'H': case 't':
              fprintf (stderr, "Option -%c requires an argument.\n", optopt);
              break;
         default:
@@ -742,6 +747,7 @@ int main(int argc, char **argv) {
     default:
       abort();
   }
+
   
   set_led_brightness(led_brightness);
   
